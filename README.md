@@ -6,3 +6,7 @@
 ```console
 gcc trabalho1.c -o trabalho1 -lpthread
 ```
+
+```console
+./trabalho1
+```
