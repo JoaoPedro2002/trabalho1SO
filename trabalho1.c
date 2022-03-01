@@ -7,7 +7,7 @@
 
 #define NUM_THREADS 10
 
-int numeroImovel = 6;
+int numeroImovel = 9;
 
 pthread_mutex_t inquilino;
 pthread_mutex_t corretor;
@@ -220,11 +220,13 @@ void* t_inquilino(void *args)
     srand(time(NULL));
     int tempo = (rand() % (3 - 1 + 1));
     pthread_mutex_lock(&inquilino);
-    Imovel imvAlugado = alugar(); // alugar imovel
-    pthread_mutex_unlock(&inquilino);
-    sleep(tempo); // espera um tempo entre 1 e 3
-    pthread_mutex_lock(&inquilino);
-    devolver(imvAlugado); // devolve
+    if (tamanhoImoveisDisponiveis > 0) {
+      Imovel imvAlugado = alugar(); // alugar imovel
+      pthread_mutex_unlock(&inquilino);
+      sleep(tempo); // espera um tempo entre 1 e 3
+      pthread_mutex_lock(&inquilino);
+      devolver(imvAlugado); // devolve
+    }
     pthread_mutex_unlock(&inquilino);
     pthread_exit(NULL);
 };
@@ -295,14 +297,21 @@ int main(int argc, char *argv[])
     Imovel disponivel1 = {1, "Rua 1", 1500, "Trindade"};
     Imovel disponivel2 = {2, "Rua 2", 45200, "Centro"};
     Imovel disponivel3 = {3, "Rua 3", 1000, "Itacorubi"};
-    Imovel disponivel4 = {4, "Rua 4", 10000, "Centro"};
-    Imovel disponivel5 = {5, "Rua 5", 1700, "Pantanal"};
+    Imovel disponivel4 = {4, "Rua 6", 1540, "Trindade"};
+    Imovel disponivel5 = {5, "Rua 6", 4200, "Centro"};
+    Imovel disponivel6 = {6, "Rua 4", 1990, "Itacorubi"};
+    
+    Imovel entregues1 = {7, "Rua 4", 10000, "Centro"};
+    Imovel entregues2 = {8, "Rua 5", 1700, "Pantanal"};
 
     insertDisponiveis(disponivel1);
     insertDisponiveis(disponivel2);
     insertDisponiveis(disponivel3);
-    insertEntregues(disponivel4);
-    insertEntregues(disponivel5);
+    insertDisponiveis(disponivel4);
+    insertDisponiveis(disponivel5);
+    insertDisponiveis(disponivel6);
+    insertEntregues(entregues1);
+    insertEntregues(entregues2);
 
     srand(time(NULL));
 
