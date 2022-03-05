@@ -5,12 +5,12 @@
 #include <unistd.h>
 #include <time.h>
 
-#define NUM_THREADS 10
+#define NUM_THREADS 20
 
-int numeroImovel = 9;
+int numeroImovel = 1;
 
-pthread_mutex_t inquilino;
-pthread_mutex_t corretor;
+pthread_mutex_t disponiveis;
+pthread_mutex_t entregues;
 
 
 // estrutura imoveis
@@ -219,21 +219,21 @@ void* t_inquilino(void *args)
 {
     srand(time(NULL));
     int tempo = (rand() % (3 - 1 + 1));
-    pthread_mutex_lock(&inquilino);
+    pthread_mutex_lock(&disponiveis);
     if (tamanhoImoveisDisponiveis > 0) {
       Imovel imvAlugado = alugar(); // alugar imovel
-      pthread_mutex_unlock(&inquilino);
+      pthread_mutex_unlock(&disponiveis);
       sleep(tempo); // espera um tempo entre 1 e 3
-      pthread_mutex_lock(&inquilino);
+      pthread_mutex_lock(&entregues);
       devolver(imvAlugado); // devolve
-    }
-    pthread_mutex_unlock(&inquilino);
+      pthread_mutex_unlock(&entregues);
+    } else { pthread_mutex_unlock(&disponiveis); }
     pthread_exit(NULL);
 };
 
 void adicionarImovel() {
   srand(time(NULL));
-  float preco = rand() % (10000 + 1 - 1000) + 1000; // preco aleatorio entre 10000 e 1000
+  float preco = rand() % (10000 + 1 - 1000) + 1000; // preco aleatorio entre 1000 e 10000
   Imovel imovel = {numeroImovel, "endereco", preco, "bairro" }; // cria imovel
   insertDisponiveis(imovel); // adiciona imovel
   printf("Corretor adiciona imovel %d\n", numeroImovel);
@@ -262,27 +262,33 @@ void* t_corretor(void *args) {
   srand(time(NULL));
 
   for (int i=0; i < 3; i++) {
-    pthread_mutex_lock(&corretor);
     int opcao = (rand() % (3 - 1 + 1)) + 1;
     printf("Corretor selecionou a opcao: %s\n", opcao == 1 ? "adicionar" : opcao == 2 ? "mover" : "remover");
-    switch (opcao) { // opcao aleatorio 1: adicionar, 2: mover, 3: remover
+    switch (opcao) { // opcao aleatoria 1: adicionar, 2: mover, 3: remover
     case 1:
+        pthread_mutex_lock(&disponiveis);
         adicionarImovel(); // adicionar
+        pthread_mutex_unlock(&disponiveis);
         break;
     case 2:
+        pthread_mutex_lock(&disponiveis);
+        pthread_mutex_lock(&entregues);
       if (tamanhoImoveisEntregues > 0) { 
         moverImovel(); // mover
-      }
+        }
+        pthread_mutex_unlock(&disponiveis);
+        pthread_mutex_unlock(&entregues);
       break;
     case 3:
+      pthread_mutex_lock(&disponiveis);
       if (tamanhoImoveisDisponiveis > 0) {
         removerImovel(); // remover
       }
+      pthread_mutex_unlock(&disponiveis);
       break;
     default:
       break;
     }
-    pthread_mutex_unlock(&corretor);
     sleep((rand() % (5 - 2 + 1))); // espera uma quantidade aleatoria de tempo
   }
   
@@ -294,24 +300,21 @@ int main(int argc, char *argv[])
 {
     pthread_t t[NUM_THREADS];
     // imoveis
-    Imovel disponivel1 = {1, "Rua 1", 1500, "Trindade"};
-    Imovel disponivel2 = {2, "Rua 2", 45200, "Centro"};
-    Imovel disponivel3 = {3, "Rua 3", 1000, "Itacorubi"};
-    Imovel disponivel4 = {4, "Rua 6", 1540, "Trindade"};
-    Imovel disponivel5 = {5, "Rua 6", 4200, "Centro"};
-    Imovel disponivel6 = {6, "Rua 4", 1990, "Itacorubi"};
-    
-    Imovel entregues1 = {7, "Rua 4", 10000, "Centro"};
-    Imovel entregues2 = {8, "Rua 5", 1700, "Pantanal"};
+    for (int i=0; i < 40; i++) {
+      srand(time(NULL));
+      float preco = rand() % (10000 + 1 - 1000) + 1000; // preco aleatorio entre 1000 e 10000
+      Imovel imovel = {numeroImovel, "endereco", preco, "bairro" }; // cria imovel
+      insertDisponiveis(imovel); // adiciona imovel
+      numeroImovel++;
+    }
 
-    insertDisponiveis(disponivel1);
-    insertDisponiveis(disponivel2);
-    insertDisponiveis(disponivel3);
-    insertDisponiveis(disponivel4);
-    insertDisponiveis(disponivel5);
-    insertDisponiveis(disponivel6);
-    insertEntregues(entregues1);
-    insertEntregues(entregues2);
+    for (int i=0; i < 40; i++) {
+      srand(time(NULL));
+      float preco = rand() % (10000 + 1 - 1000) + 1000; // preco aleatorio entre 1000 e 10000
+      Imovel imovel = {numeroImovel, "endereco", preco, "bairro" }; // cria imovel
+      insertEntregues(imovel); // adiciona imovel
+      numeroImovel++;
+    }
 
     srand(time(NULL));
 
