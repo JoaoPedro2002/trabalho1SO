@@ -201,80 +201,81 @@ void deleteEntregues(int delCodigo) {
   tamanhoImoveisEntregues--;
 }
 
-Imovel alugar() {
+Imovel alugar(int n) {
   int aleatorio = rand() % tamanhoImoveisDisponiveis;
   avancarNPosicoesDisponiveis(aleatorio); // vai para a posicao definida por um numero aleatorio de 0 ate o tamanho da lista
   Imovel imvAlugado = currentImoveisDisponiveis->data;
   deleteDisponiveis(imvAlugado.codigo); // remove o imovel da lista de imoveis disponiveis
-  printf("Inquilino aluga imovel %d\n", imvAlugado.codigo);
+  printf("Inquilino %d aluga imovel %d\n", n, imvAlugado.codigo);
   return imvAlugado; // retorna imovel
 }
 
-void devolver(Imovel imvAlugado) {
+void devolver(int n, Imovel imvAlugado) {
   insertEntregues(imvAlugado); // adiciona imovel na lista de imoveis entregues
-  printf("Inquilino devolve imovel %d\n", imvAlugado.codigo);
+  printf("Inquilino %d devolve imovel %d\n", n, imvAlugado.codigo);
 }
 
-void* t_inquilino(void *args)
-{
+void* t_inquilino(void *args) {
+    int n = *((int *) args);
     srand(time(NULL));
     int tempo = (rand() % (3 - 1 + 1));
     pthread_mutex_lock(&disponiveis);
     if (tamanhoImoveisDisponiveis > 0) {
-      Imovel imvAlugado = alugar(); // alugar imovel
+      Imovel imvAlugado = alugar(n); // alugar imovel
       pthread_mutex_unlock(&disponiveis);
       sleep(tempo); // espera um tempo entre 1 e 3
       pthread_mutex_lock(&entregues);
-      devolver(imvAlugado); // devolve
+      devolver(n, imvAlugado); // devolve
       pthread_mutex_unlock(&entregues);
     } else { pthread_mutex_unlock(&disponiveis); }
+    free(args);
     pthread_exit(NULL);
 };
 
-void adicionarImovel() {
+void adicionarImovel(int n) {
   srand(time(NULL));
   float preco = rand() % (10000 + 1 - 1000) + 1000; // preco aleatorio entre 1000 e 10000
   Imovel imovel = {numeroImovel, "endereco", preco, "bairro" }; // cria imovel
   insertDisponiveis(imovel); // adiciona imovel
-  printf("Corretor adiciona imovel %d\n", numeroImovel);
+  printf("Corretor %d adiciona imovel %d\n", n, numeroImovel);
   numeroImovel++;
 }
 
-void removerImovel() {
+void removerImovel(int n) {
   int aleatorio = rand() % tamanhoImoveisDisponiveis;
   avancarNPosicoesDisponiveis(aleatorio); // vai para a posicao definida por um numero aleatorio de 0 ate o tamanho da lista 
   Imovel imvRemovido = currentImoveisDisponiveis->data; // pega o imovel dessa posição
   deleteDisponiveis(imvRemovido.codigo); // remove da lista de imoveis disponiveis
-  printf("Corretor remove imovel %d\n", imvRemovido.codigo);
+  printf("Corretor %d remove imovel %d\n", n, imvRemovido.codigo);
 }
 
-void moverImovel() {
+void moverImovel(int n) {
   int aleatorio = rand() % tamanhoImoveisEntregues;
   avancarNPosicoesEntregues(aleatorio); // vai para a posicao definida por um numero aleatorio de 0 ate o tamanho da lista 
   Imovel imvMovido = currentImoveisEntregues->data; // pega o imovel da lista de entregues
   deleteEntregues(imvMovido.codigo); // remove o imovel da lista de entregues
   insertDisponiveis(imvMovido); // insere o imovel na lista de disponiveis
-  printf("Corretor move imovel %d \n", imvMovido.codigo);
+  printf("Corretor %d move imovel %d \n", n, imvMovido.codigo);
 }
 
 void* t_corretor(void *args) {
-  
+  int n = *((int *) args);
   srand(time(NULL));
 
   for (int i=0; i < 3; i++) {
     int opcao = (rand() % (3 - 1 + 1)) + 1;
-    printf("Corretor selecionou a opcao: %s\n", opcao == 1 ? "adicionar" : opcao == 2 ? "mover" : "remover");
+    printf("Corretor %d selecionou a opcao: %s\n", n, opcao == 1 ? "adicionar" : opcao == 2 ? "mover" : "remover");
     switch (opcao) { // opcao aleatoria 1: adicionar, 2: mover, 3: remover
     case 1:
         pthread_mutex_lock(&disponiveis);
-        adicionarImovel(); // adicionar
+        adicionarImovel(n); // adicionar
         pthread_mutex_unlock(&disponiveis);
         break;
     case 2:
         pthread_mutex_lock(&disponiveis);
         pthread_mutex_lock(&entregues);
       if (tamanhoImoveisEntregues > 0) { 
-        moverImovel(); // mover
+        moverImovel(n); // mover
         }
         pthread_mutex_unlock(&disponiveis);
         pthread_mutex_unlock(&entregues);
@@ -282,7 +283,7 @@ void* t_corretor(void *args) {
     case 3:
       pthread_mutex_lock(&disponiveis);
       if (tamanhoImoveisDisponiveis > 0) {
-        removerImovel(); // remover
+        removerImovel(n); // remover
       }
       pthread_mutex_unlock(&disponiveis);
       break;
@@ -292,7 +293,7 @@ void* t_corretor(void *args) {
     sleep((rand() % (5 - 2 + 1))); // espera uma quantidade aleatoria de tempo
   }
   
-
+  free(args);
   pthread_exit(NULL);
 }
 
@@ -318,10 +319,21 @@ int main(int argc, char *argv[])
 
     srand(time(NULL));
 
+    int n = 1;
+
     // // chamada das threads
     for(int i=0; i < NUM_THREADS; i+=2) {
-      pthread_create(&t[i], NULL, t_corretor, NULL);
-      pthread_create(&t[i+1], NULL, t_inquilino, NULL);
+      int *arg = malloc(sizeof(*arg));
+      int *arg2 = malloc(sizeof(*arg2));
+      if ( arg == NULL || arg2 == NULL ) {
+            fprintf(stderr, "Nao foi possivel alocar espaço para arg");
+            exit(EXIT_FAILURE);
+        }
+      *arg = n;
+      *arg2 = n;
+      n++;
+      pthread_create(&t[i], NULL, t_corretor, arg);
+      pthread_create(&t[i+1], NULL, t_inquilino, arg2);
     }
     
     // // garante o termino de todas threads
