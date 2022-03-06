@@ -217,7 +217,6 @@ void devolver(int n, Imovel imvAlugado) {
 
 void* t_inquilino(void *args) {
     int n = *((int *) args);
-    srand(time(NULL));
     int tempo = (rand() % (3 - 1 + 1));
     pthread_mutex_lock(&disponiveis);
     if (tamanhoImoveisDisponiveis > 0) {
@@ -233,7 +232,6 @@ void* t_inquilino(void *args) {
 };
 
 void adicionarImovel(int n) {
-  srand(time(NULL));
   float preco = rand() % (10000 + 1 - 1000) + 1000; // preco aleatorio entre 1000 e 10000
   Imovel imovel = {numeroImovel, "endereco", preco, "bairro" }; // cria imovel
   insertDisponiveis(imovel); // adiciona imovel
@@ -260,7 +258,6 @@ void moverImovel(int n) {
 
 void* t_corretor(void *args) {
   int n = *((int *) args);
-  srand(time(NULL));
 
   for (int i=0; i < 3; i++) {
     int opcao = (rand() % (3 - 1 + 1)) + 1;
@@ -300,9 +297,9 @@ void* t_corretor(void *args) {
 int main(int argc, char *argv[])
 {
     pthread_t t[NUM_THREADS];
+    srand(time(NULL));
     // imoveis
     for (int i=0; i < 40; i++) {
-      srand(time(NULL));
       float preco = rand() % (10000 + 1 - 1000) + 1000; // preco aleatorio entre 1000 e 10000
       Imovel imovel = {numeroImovel, "endereco", preco, "bairro" }; // cria imovel
       insertDisponiveis(imovel); // adiciona imovel
@@ -310,14 +307,12 @@ int main(int argc, char *argv[])
     }
 
     for (int i=0; i < 40; i++) {
-      srand(time(NULL));
       float preco = rand() % (10000 + 1 - 1000) + 1000; // preco aleatorio entre 1000 e 10000
       Imovel imovel = {numeroImovel, "endereco", preco, "bairro" }; // cria imovel
       insertEntregues(imovel); // adiciona imovel
       numeroImovel++;
     }
 
-    srand(time(NULL));
 
     int n = 1;
 
